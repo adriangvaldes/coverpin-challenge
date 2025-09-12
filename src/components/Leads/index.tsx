@@ -1,6 +1,33 @@
 import { Search, ChevronDownIcon } from "lucide-react";
+import { LeadsTable } from "./LeadsTable";
+import { useMemo, useState } from "react";
+import { useApi } from "../../context/ApiContext";
+import { usePersistentState } from "../../hooks/usePersistentState";
 
 export function Leads() {
+  const { leadsDataFetched } = useApi();
+
+  const [searchTerm, setSearchTerm] = usePersistentState("seller-console-search", "");
+  const [statusFilter, setStatusFilter] = usePersistentState("seller-console-status", "All");
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedLeadId, setSelectedLeadId] = useState(null);
+
+  const filteredAndSortedLeads = useMemo(() => {
+    return leadsDataFetched
+      .filter((lead) => {
+        const lowerSearch = searchTerm.toLowerCase();
+        const matchesSearch =
+          lowerSearch === "" ||
+          lead.name.toLowerCase().includes(lowerSearch) ||
+          lead.company.toLowerCase().includes(lowerSearch);
+
+        const matchesStatus = statusFilter === "All" || lead.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) => b.score - a.score);
+  }, [leadsDataFetched, searchTerm, statusFilter]);
+
   return (
     <div className='bg-gray-800 rounded-2xl p-10 flex flex-col gap-5 flex-1 shadow-lg'>
       <div className=''>
@@ -37,43 +64,11 @@ export function Leads() {
           </div>
         </div>
 
-        {/* Tabela de Leads */}
-        {/* <div className='overflow-x-auto'>
-              {isLoading ? (
-                <div className='flex justify-center items-center h-64'>
-                  <Spinner />
-                </div>
-              ) : filteredAndSortedLeads.length === 0 ? (
-                <div className='text-center p-8 text-gray-500'>No leads found.</div>
-              ) : (
-                <table className='w-full text-left'>
-                  <thead>
-                    <tr className='border-b border-gray-700'>
-                      <th className='p-2'>Name</th>
-                      <th className='p-2 hidden md:table-cell'>Company</th>
-                      <th className='p-2'>Status</th>
-                      <th className='p-2 text-right'>Score</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAndSortedLeads.map((lead) => (
-                      <tr
-                        key={lead.id}
-                        onClick={() => setSelectedLeadId(lead.id)}
-                        className='border-b border-gray-700 hover:bg-gray-700/50 cursor-pointer'
-                      >
-                        <td className='p-3 font-semibold'>{lead.name}</td>
-                        <td className='p-3 hidden md:table-cell'>{lead.company}</td>
-                        <td className='p-3'>
-                          <StatusBadge status={lead.status} />
-                        </td>
-                        <td className='p-3 text-right font-bold text-purple-400'>{lead.score}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div> */}
+        <LeadsTable
+          filteredAndSortedLeads={filteredAndSortedLeads}
+          isLoading={isLoading}
+          setSelectedLeadId={setSelectedLeadId}
+        />
       </div>
     </div>
   );

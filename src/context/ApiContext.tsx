@@ -1,5 +1,6 @@
-import React, { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { leadsData } from "../utils/leadsData";
+import type { LeadsApiData } from "../types";
 
 type ApiError = {
   message: string;
@@ -11,6 +12,7 @@ interface ApiContextType {
   error: ApiError | null;
   get: <T>(url: string) => Promise<T>;
   post: <T>(url: string, data?: any) => Promise<T>;
+  leadsDataFetched: LeadsApiData[];
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
@@ -22,6 +24,7 @@ type ApiProviderProps = {
 export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<ApiError | null>(null);
+  const [leadsDataFetched, setLeadsDataFetched] = useState<LeadsApiData[]>([]);
 
   const handleRequest = useCallback(async (request: () => Promise<any>) => {
     setIsLoading(true);
@@ -75,14 +78,29 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     [handleRequest]
   );
 
+  async function GetLeadsData() {
+    try {
+      const data = await get<LeadsApiData[]>("/posts");
+      setLeadsDataFetched(data);
+    } catch (error) {
+      console.error("Error fetching leads data:", error);
+      throw error;
+    }
+  }
+
+  useEffect(() => {
+    GetLeadsData();
+  }, []);
+
   const contextValue = useMemo(
     () => ({
       isLoading,
       error,
       get,
       post,
+      leadsDataFetched,
     }),
-    [isLoading, error, get, post]
+    [isLoading, error, get, post, leadsDataFetched]
   );
 
   return <ApiContext.Provider value={contextValue}>{children}</ApiContext.Provider>;
