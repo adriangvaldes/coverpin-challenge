@@ -1,15 +1,19 @@
 import { Search, ChevronDownIcon } from "lucide-react";
 import { LeadsTable } from "./LeadsTable";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useApi } from "../../context/ApiContext";
 import { usePersistentState } from "../../hooks/usePersistentState";
+import { DetailPanel } from "../DetailPanel";
+import type { Lead, Opportunity } from "../../types";
 
 export function Leads() {
-  const { leadsDataFetched, isLoading } = useApi();
+  const { leadsDataFetched, isLoading, updateLeads, showToast, handleConvertToOpportunity } = useApi();
 
   const [searchTerm, setSearchTerm] = usePersistentState("seller-console-search", "");
   const [statusFilter, setStatusFilter] = usePersistentState("seller-console-status", "All");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+  const [isSaving, setIsSaving] = useState(false);
 
   const selectedLead = useMemo(
     () => leadsDataFetched.find((lead) => lead.id === selectedLeadId),
@@ -32,6 +36,25 @@ export function Leads() {
       })
       .sort((a, b) => b.score - a.score);
   }, [leadsDataFetched, searchTerm, statusFilter]);
+
+  const handleSaveLead = useCallback(
+    (updatedLead: Lead) => {
+      setIsSaving(true);
+      setTimeout(() => {
+        if (Math.random() > 0.9) {
+          showToast("Failed to save lead.", "error");
+          setIsSaving(false);
+          return;
+        }
+
+        updateLeads(leadsDataFetched.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead)));
+        setIsSaving(false);
+        setSelectedLeadId(null);
+        showToast("Lead saved successfully!");
+      }, 1000);
+    },
+    [showToast]
+  );
 
   return (
     <div className='bg-gray-800 rounded-2xl p-10 flex flex-col gap-5 flex-1 shadow-lg'>
@@ -80,7 +103,10 @@ export function Leads() {
             lead={selectedLead}
             onClose={() => setSelectedLeadId(null)}
             onSave={handleSaveLead}
-            onConvert={handleConvertToOpportunity}
+            onConvert={() => {
+              handleConvertToOpportunity(selectedLead);
+              setSelectedLeadId(null);
+            }}
             isSaving={isSaving}
           />
         )}

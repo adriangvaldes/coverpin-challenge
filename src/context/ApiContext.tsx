@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { leadsData } from "../utils/leadsData";
-import type { LeadsApiData } from "../types";
+import type { Lead, Opportunity } from "../types";
 
 type ApiError = {
   message: string;
@@ -12,7 +12,11 @@ interface ApiContextType {
   error: ApiError | null;
   get: <T>(url: string) => Promise<T>;
   post: <T>(url: string, data?: any) => Promise<T>;
-  leadsDataFetched: LeadsApiData[];
+  leadsDataFetched: Lead[];
+  updateLeads: (newValue: Lead[]) => void;
+  showToast: (message: string, type?: "success" | "error") => void;
+  handleConvertToOpportunity: (lead: Lead) => void;
+  opportunities: Opportunity[];
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
@@ -24,7 +28,13 @@ type ApiProviderProps = {
 export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<ApiError | null>(null);
-  const [leadsDataFetched, setLeadsDataFetched] = useState<LeadsApiData[]>([]);
+  const [leadsDataFetched, setLeadsDataFetched] = useState<Lead[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
 
   const handleRequest = useCallback(async (request: () => Promise<any>) => {
     setIsLoading(true);
@@ -80,7 +90,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
 
   async function GetLeadsData() {
     try {
-      const data = await get<LeadsApiData[]>("/posts");
+      const data = await get<Lead[]>("/posts");
       setLeadsDataFetched(data);
     } catch (error) {
       console.error("Error fetching leads data:", error);
@@ -88,9 +98,37 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     }
   }
 
+  const updateLeads = useCallback(
+    (newValue: Lead[]) => {
+      setLeadsDataFetched(newValue);
+    },
+    [leadsDataFetched]
+  );
+
+  const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+  }, []);
+
   useEffect(() => {
     GetLeadsData();
   }, []);
+
+  const handleConvertToOpportunity = useCallback(
+    (leadToConvert: Lead) => {
+      const newOpportunity: Opportunity = {
+        id: `opp_${Date.now()}`,
+        name: `${leadToConvert.name} - ${leadToConvert.company}`,
+        stage: "Discovery",
+        amount: null,
+        accountName: leadToConvert.company,
+      };
+      setOpportunities((prev) => [...prev, newOpportunity]);
+      updateLeads(leadsDataFetched.filter((lead) => lead.id !== leadToConvert.id));
+      showToast("Lead converted to Opportunity!");
+    },
+    [showToast]
+  );
 
   const contextValue = useMemo(
     () => ({
@@ -99,6 +137,10 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
       get,
       post,
       leadsDataFetched,
+      updateLeads,
+      showToast,
+      handleConvertToOpportunity,
+      opportunities,
     }),
     [isLoading, error, get, post, leadsDataFetched]
   );
