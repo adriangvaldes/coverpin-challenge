@@ -31,7 +31,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     setError(null);
     try {
       const response = await request();
-      return response.data;
+      return response;
     } catch (err) {
       const apiError: ApiError = {
         message: `API Error: Failed API`, // We can enhance this to extract more meaningful messages from the error object and track the error codes.

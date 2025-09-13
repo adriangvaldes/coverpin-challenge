@@ -5,14 +5,19 @@ import { useApi } from "../../context/ApiContext";
 import { usePersistentState } from "../../hooks/usePersistentState";
 
 export function Leads() {
-  const { leadsDataFetched } = useApi();
+  const { leadsDataFetched, isLoading } = useApi();
 
   const [searchTerm, setSearchTerm] = usePersistentState("seller-console-search", "");
   const [statusFilter, setStatusFilter] = usePersistentState("seller-console-status", "All");
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedLeadId, setSelectedLeadId] = useState(null);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+  const selectedLead = useMemo(
+    () => leadsDataFetched.find((lead) => lead.id === selectedLeadId),
+    [leadsDataFetched, selectedLeadId]
+  );
 
   const filteredAndSortedLeads = useMemo(() => {
+    if (!leadsDataFetched) return [];
     return leadsDataFetched
       .filter((lead) => {
         const lowerSearch = searchTerm.toLowerCase();
@@ -37,8 +42,8 @@ export function Leads() {
             <input
               type='text'
               placeholder='Search by name or company...'
-              // value={searchTerm}
-              onChange={(e) => console.log(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className='w-full bg-gray-700 p-2 pl-12 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500'
             />
             <div className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'>
@@ -47,8 +52,8 @@ export function Leads() {
           </div>
           <div className='relative'>
             <select
-              // value={statusFilter}
-              onChange={(e) => console.log(e.target.value)}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
               className='w-full sm:w-48 appearance-none bg-gray-700 p-2 pr-8 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500'
             >
               <option value='All'>All Statuses</option>
@@ -67,8 +72,18 @@ export function Leads() {
         <LeadsTable
           filteredAndSortedLeads={filteredAndSortedLeads}
           isLoading={isLoading}
-          setSelectedLeadId={setSelectedLeadId}
+          setSelectedLeadId={(id) => setSelectedLeadId(id)}
         />
+
+        {selectedLead && (
+          <DetailPanel
+            lead={selectedLead}
+            onClose={() => setSelectedLeadId(null)}
+            onSave={handleSaveLead}
+            onConvert={handleConvertToOpportunity}
+            isSaving={isSaving}
+          />
+        )}
       </div>
     </div>
   );
