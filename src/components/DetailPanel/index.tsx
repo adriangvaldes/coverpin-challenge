@@ -15,18 +15,14 @@ export const DetailPanel = ({ lead, onClose, onSave, onConvert, isSaving }: Deta
   const [emailError, setEmailError] = useState("");
   const [isPanelVisible, setIsPanelVisible] = useState(false);
 
-  // Controla a animação de entrada
   useEffect(() => {
-    // Adiciona um pequeno delay para garantir que a transição CSS seja aplicada
     const timer = setTimeout(() => setIsPanelVisible(true), 10);
     return () => clearTimeout(timer);
   }, []);
 
-  // Controla a animação de saída
   const handleClose = () => {
     setIsPanelVisible(false);
-    // Espera a animação terminar antes de chamar a função onClose do pai
-    setTimeout(onClose, 300); // A duração deve corresponder à da transição
+    setTimeout(onClose, 300);
   };
 
   useEffect(() => {
@@ -53,12 +49,14 @@ export const DetailPanel = ({ lead, onClose, onSave, onConvert, isSaving }: Deta
   };
 
   return (
-    <div
-      className={`fixed inset-0 bg-black z-40 transition-opacity duration-300 ${
-        isPanelVisible ? "bg-opacity-50" : "bg-opacity-0"
-      }`}
-      onClick={handleClose}
-    >
+    <div className='fixed inset-0 z-40'>
+      <div
+        className={`absolute inset-0 bg-black transition-opacity duration-300 ${
+          isPanelVisible ? "opacity-50" : "opacity-0"
+        }`}
+        onClick={handleClose}
+      ></div>
+
       <div
         className={`fixed top-0 right-0 h-full w-full max-w-md bg-gray-800 text-white shadow-xl transform transition-transform duration-300 ease-in-out ${
           isPanelVisible ? "translate-x-0" : "translate-x-full"

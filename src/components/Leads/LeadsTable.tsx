@@ -1,48 +1,57 @@
-import { Spinner } from "../Spinner";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useRef } from "react";
 import { StatusBadge } from "./StatusBadge";
+import type { Lead } from "../../types";
 
 interface LeadsTableProps {
-  filteredAndSortedLeads: any[];
-  isLoading: boolean;
-  setSelectedLeadId: (id: string) => void;
+  leads: Lead[];
+  onRowClick: (id: string) => void;
 }
-export function LeadsTable({ filteredAndSortedLeads, isLoading, setSelectedLeadId }: LeadsTableProps) {
+export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onRowClick }) => {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: leads.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 50,
+    overscan: 5,
+  });
+
   return (
-    <div className='overflow-x-auto'>
-      {isLoading ? (
-        <div className='flex justify-center items-center h-64'>
-          <Spinner />
-        </div>
-      ) : filteredAndSortedLeads.length === 0 ? (
-        <div className='text-center p-8 text-gray-500'>No leads found.</div>
-      ) : (
-        <table className='w-full text-left'>
-          <thead>
-            <tr className='border-b border-gray-700'>
-              <th className='p-2'>Name</th>
-              <th className='p-2 hidden md:table-cell'>Company</th>
-              <th className='p-2'>Status</th>
-              <th className='p-2 text-right'>Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAndSortedLeads.map((lead) => (
-              <tr
-                key={lead.id}
-                onClick={() => setSelectedLeadId(lead.id)}
-                className='border-b border-gray-700 hover:bg-gray-700/50 cursor-pointer'
-              >
-                <td className='p-3 font-semibold'>{lead.name}</td>
-                <td className='p-3 hidden md:table-cell'>{lead.company}</td>
-                <td className='p-3'>
-                  <StatusBadge status={lead.status} />
-                </td>
-                <td className='p-3 text-right font-bold text-purple-400'>{lead.score}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div ref={parentRef} className='h-full w-full overflow-auto'>
+      <div className='sticky top-0 bg-gray-800 z-10 flex items-center border-b-2 border-gray-600 px-3 py-2 font-bold'>
+        <div className='w-1/3'>Name</div>
+        <div className='w-1/3 hidden md:block'>Company</div>
+        <div className='w-1/4'>Status</div>
+        <div className='w-1/4 text-right'>Score</div>
+      </div>
+      <div className='h-[70vh]' style={{ width: "100%", position: "relative" }}>
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+          const lead = leads[virtualItem.index];
+          return (
+            <div
+              key={virtualItem.key}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+              onClick={() => onRowClick(lead.id)}
+              className='flex items-center border-b border-gray-700 hover:bg-gray-700/50 cursor-pointer px-3'
+            >
+              <div className='w-1/3 font-semibold truncate'>{lead.name}</div>
+              <div className='w-1/3 hidden md:block truncate'>{lead.company}</div>
+              <div className='w-1/4'>
+                <StatusBadge status={lead.status} />
+              </div>
+              <div className='w-1/4 text-right font-bold text-purple-400'>{lead.score}</div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
-}
+};

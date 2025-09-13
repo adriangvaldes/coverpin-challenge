@@ -4,7 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useApi } from "../../context/ApiContext";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import { DetailPanel } from "../DetailPanel";
-import type { Lead, Opportunity } from "../../types";
+import type { Lead } from "../../types";
+import { Spinner } from "../Spinner";
 
 export function Leads() {
   const { leadsDataFetched, isLoading, updateLeads, showToast, handleConvertToOpportunity } = useApi();
@@ -92,11 +93,18 @@ export function Leads() {
           </div>
         </div>
 
-        <LeadsTable
-          filteredAndSortedLeads={filteredAndSortedLeads}
-          isLoading={isLoading}
-          setSelectedLeadId={(id) => setSelectedLeadId(id)}
-        />
+        {/* Container da Tabela Virtualizada que preenche o espaço */}
+        <div className='flex-grow min-h-0'>
+          {isLoading ? (
+            <div className='flex justify-center items-center h-full'>
+              <Spinner />
+            </div>
+          ) : filteredAndSortedLeads.length === 0 ? (
+            <div className='text-center p-8 text-gray-500'>No leads found.</div>
+          ) : (
+            <LeadsTable leads={filteredAndSortedLeads} onRowClick={setSelectedLeadId} />
+          )}
+        </div>
 
         {selectedLead && (
           <DetailPanel

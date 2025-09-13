@@ -58,9 +58,8 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     <T,>(url: string): Promise<T> => {
       return handleRequest(
         () =>
-          new Promise((resolve, reject) => {
+          new Promise((resolve) => {
             setTimeout(() => {
-              console.log(`Buscando dados fictícios de: ${url}`);
               if (url.includes("/posts")) {
                 resolve(leadsData);
               } else {
@@ -74,12 +73,11 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   );
 
   const post = useCallback(
-    <T,>(url: string, data: any): Promise<T> => {
+    <T,>(data: any): Promise<T> => {
       return handleRequest(
         () =>
           new Promise((resolve) => {
             setTimeout(() => {
-              console.log(`Dados "enviados" para ${url}:`, data);
               resolve({ success: true, received: data } as any);
             }, 1000);
           })
@@ -145,7 +143,18 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     [isLoading, error, get, post, leadsDataFetched]
   );
 
-  return <ApiContext.Provider value={contextValue}>{children}</ApiContext.Provider>;
+  return (
+    <ApiContext.Provider value={contextValue}>
+      {children}
+      <div
+        className={`fixed bottom-5 right-5 p-4 rounded-lg shadow-lg text-white transition-all duration-300 ease-in-out ${
+          toast.show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5 pointer-events-none"
+        } ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}
+      >
+        {toast.message}
+      </div>
+    </ApiContext.Provider>
+  );
 };
 
 export const useApi = (): ApiContextType => {
